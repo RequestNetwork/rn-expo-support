@@ -1,5 +1,6 @@
 {
   "expo": {
+    "entryPoint": "./index.js",
     "name": "aimen-test",
     "slug": "aimen-test",
     "version": "1.0.0",
