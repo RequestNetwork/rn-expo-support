@@ -82,7 +82,7 @@ export default function HomeScreen() {
           version: "0.0.3",
         },
         creationDate: new Date().toISOString(),
-        invoiceNumber: "200",
+        invoiceNumber: "Created from React Native",
         invoiceItems: [
           {
             currency: "USD",
@@ -104,6 +104,8 @@ export default function HomeScreen() {
       },
     };
 
+    console.log("Object : ", requestCreateParameters);
+
     console.log("Create request object");
 
     const requestNetwork = new RequestNetwork({
@@ -114,12 +116,16 @@ export default function HomeScreen() {
     });
 
     console.log("Create request network");
-
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request creation timed out")), 30000)
+    );
     try {
-      const result = await requestNetwork.createRequest(
-        requestCreateParameters
-      );
-
+      console.log("About to create request...");
+      const result = await Promise.race([
+        requestNetwork.createRequest(requestCreateParameters),
+        timeout,
+      ]);
+      console.log("Request created successfully");
       console.log("Done creating request");
 
       console.log(result);
@@ -156,8 +162,10 @@ export default function HomeScreen() {
         title="Random Values"
         onPress={() => {
           try {
-            const values = crypto.randomBytes(16);
+            const values = crypto.randomBytes(32);
             console.log("Random bytes are : ", values);
+
+            console.log("8 bytes : ", values.slice(0, 8).toString("hex"));
           } catch (err) {
             console.error(err);
           }

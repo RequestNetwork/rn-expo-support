@@ -12,7 +12,7 @@ Object.assign(global.crypto, cryptoPolyfill);
 // Ensure these are available globally
 global.crypto.randomBytes = cryptoPolyfill.randomBytes;
 global.randomBytes = cryptoPolyfill.randomBytes;
-
+global.crypto = Object.assign({}, global.crypto, cryptoPolyfill);
 // Mimic CommonJS style export
 global.crypto.default = cryptoPolyfill;
 import EventEmitter from "eventemitter3";
