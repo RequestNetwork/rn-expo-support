@@ -1,5 +1,5 @@
 {
-  "name": "aimen-test",
+  "name": "rn-expo-support",
   "main": "./index.js",
   "version": "1.0.0",
   "scripts": {
@@ -61,6 +61,5 @@
     "jest-expo": "~51.0.1",
     "react-test-renderer": "18.2.0",
     "typescript": "~5.3.3"
-  },
-  "private": true
+  }
 }
