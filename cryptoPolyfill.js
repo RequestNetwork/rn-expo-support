@@ -144,10 +144,8 @@ const cryptoPolyfill = {
   pbkdf2,
   randomFillSync,
   timingSafeEqual,
-  // Add other crypto methods as needed
 };
 
-// Ensure commonJS style exports are available
 cryptoPolyfill.default = cryptoPolyfill;
 
 module.exports = {

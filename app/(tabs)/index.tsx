@@ -1,18 +1,16 @@
-import "@/index";
-import { Image, StyleSheet, Platform, Button } from "react-native";
-import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { EthereumPrivateKeySignatureProvider } from "@requestnetwork/epk-signature";
 import {
   RequestNetwork,
   Types,
   Utils,
 } from "@requestnetwork/request-client.js";
-import { EthereumPrivateKeySignatureProvider } from "@requestnetwork/epk-signature";
 import { CurrencyTypes } from "@requestnetwork/types";
+import { Wallet, providers } from "ethers";
 import { useState } from "react";
-import { providers, Wallet } from "ethers";
+import { Button, Image, StyleSheet } from "react-native";
 
 import {
   approveErc20,
@@ -49,7 +47,7 @@ export default function HomeScreen() {
 
         // The expected amount as a string, in parsed units, respecting `decimals`
         // Consider using `parseUnits()` from ethers or viem
-        expectedAmount: "10000000000000000000",
+        expectedAmount: "100000000000000000000",
 
         // The payee identity. Not necessarily the same as the payment recipient.
         payee: {
@@ -151,6 +149,7 @@ export default function HomeScreen() {
       />
       <Button
         title={isPaying ? "Loading..." : "Pay request"}
+        disabled={isPaying}
         onPress={async () => {
           try {
             setIsPaying(true);
