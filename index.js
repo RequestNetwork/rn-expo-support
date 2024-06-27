@@ -21,5 +21,11 @@ import { Readable, Writable } from "stream-browserify";
 global.Readable = Readable;
 global.Writable = Writable;
 
+import http from "http-browserify";
+global.http = http;
+
+import https from "https-browserify";
+global.https = https;
+
 // Starting expo router
 import "expo-router/entry";

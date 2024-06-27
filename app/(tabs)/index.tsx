@@ -12,12 +12,24 @@ import {
 import { EthereumPrivateKeySignatureProvider } from "@requestnetwork/epk-signature";
 import { CurrencyTypes } from "@requestnetwork/types";
 import { useState } from "react";
+import { providers, Wallet } from "ethers";
+
+import {
+  approveErc20,
+  hasErc20Approval,
+  payRequest,
+} from "@requestnetwork/payment-processor";
 
 export default function HomeScreen() {
   const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
+  const payerPrivateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY2;
 
   const [isLoading, setIsLoading] = useState(false);
-
+  const [isPaying, setIsPaying] = useState(false);
+  const [request, setRequest] = useState(null);
+  const payeeIdentity = "0xb07D2398d2004378cad234DA0EF14f1c94A530e4";
+  const payerIdentity = "0xe968dfcD119d7Fdac441F61e92ECB47E34530892";
+  const feeRecipient = "0x0000000000000000000000000000000000000000";
   const createRequest = async () => {
     setIsLoading(true);
 
@@ -25,14 +37,6 @@ export default function HomeScreen() {
       method: Types.Signature.METHOD.ECDSA,
       privateKey: privateKey as string,
     });
-
-    console.log("Signature is done");
-
-    const payeeIdentity = "0xb07D2398d2004378cad234DA0EF14f1c94A530e4";
-    const payerIdentity = "0xe968dfcD119d7Fdac441F61e92ECB47E34530892";
-    const feeRecipient = "0x0000000000000000000000000000000000000000";
-
-    console.log("Create random variables");
 
     const requestCreateParameters = {
       requestInfo: {
@@ -45,7 +49,7 @@ export default function HomeScreen() {
 
         // The expected amount as a string, in parsed units, respecting `decimals`
         // Consider using `parseUnits()` from ethers or viem
-        expectedAmount: "10000000000000000",
+        expectedAmount: "10000000000000000000",
 
         // The payee identity. Not necessarily the same as the payment recipient.
         payee: {
@@ -104,10 +108,6 @@ export default function HomeScreen() {
       },
     };
 
-    console.log("Object : ", requestCreateParameters);
-
-    console.log("Create request object");
-
     const requestNetwork = new RequestNetwork({
       nodeConnectionConfig: {
         baseURL: "https://gnosis.gateway.request.network",
@@ -115,23 +115,15 @@ export default function HomeScreen() {
       signatureProvider: epkSignatureProviders,
     });
 
-    console.log("Create request network");
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Request creation timed out")), 30000)
     );
-    try {
-      console.log("About to create request...");
-      const result = await Promise.race([
-        requestNetwork.createRequest(requestCreateParameters),
-        timeout,
-      ]);
-      console.log("Request created successfully");
-      console.log("Done creating request");
+    const result = await Promise.race([
+      requestNetwork.createRequest(requestCreateParameters),
+      timeout,
+    ]);
 
-      console.log(result);
-    } catch (err) {
-      console.error(err);
-    }
+    setRequest(result.requestId);
 
     setIsLoading(false);
   };
@@ -151,58 +143,53 @@ export default function HomeScreen() {
         disabled={isLoading}
         onPress={async () => {
           try {
-            console.log("Starting to create a request");
             await createRequest();
           } catch (err) {
-            console.log(err);
+            console.error(err);
           }
         }}
       />
       <Button
-        title="Random Values"
-        onPress={() => {
+        title={isPaying ? "Loading..." : "Pay request"}
+        onPress={async () => {
           try {
-            const values = crypto.randomBytes(32);
-            console.log("Random bytes are : ", values);
+            setIsPaying(true);
 
-            console.log("8 bytes : ", values.slice(0, 8).toString("hex"));
+            const requestClient = new RequestNetwork({
+              nodeConnectionConfig: {
+                baseURL: "https://gnosis.gateway.request.network",
+              },
+            });
+
+            const requestFromStuff = await requestClient.fromRequestId(request);
+            const requestData = requestFromStuff.getData();
+
+            const provider = new providers.JsonRpcProvider(
+              "https://eth-sepolia.g.alchemy.com/v2/PlBKMQhwRSMMnV4ue8_Xdd_ibFsa8EbB"
+            );
+            const signer = new Wallet(payerPrivateKey, provider);
+            const address = await signer.getAddress();
+            const _hasErc20Approval = await hasErc20Approval(
+              requestData,
+              address,
+              provider
+            );
+            if (!_hasErc20Approval) {
+              const approvalTx = await approveErc20(requestData, signer);
+              await approvalTx.wait(2);
+            }
+            const paymentTx = await payRequest(requestData, signer);
+            await paymentTx.wait(2);
+
+            setIsPaying(false);
           } catch (err) {
             console.error(err);
           }
         }}
       />
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText>{" "}
-          to see changes. Press{" "}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: "cmd + d", android: "cmd + m" })}
-          </ThemedText>{" "}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this
-          starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{" "}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText>{" "}
-          to get a fresh <ThemedText type="defaultSemiBold">app</ThemedText>{" "}
-          directory. This will move the current{" "}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{" "}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
+        <ThemedText type="title">
+          {request && JSON.stringify(request)}
         </ThemedText>
       </ThemedView>
     </ParallaxScrollView>
